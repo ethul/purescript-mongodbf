@@ -1,1 +1,1 @@
-# purescript-free-mongodb
+# purescript-mongodbf
