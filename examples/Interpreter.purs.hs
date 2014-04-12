@@ -5,9 +5,10 @@ import Control.Monad.Eff
 import Control.Monad.Free
 import Data.Foreign
 import Database.MongodbF
+import Database.MongodbF.Types
 
 runMongodbF :: forall e r a. Db -> MongodbF (ContT r (Eff (mdb :: MDB | e)) a) -> ContT r (Eff (mdb :: MDB | e)) a
-runMongodbF db (Find c r p f) = ContT (\k -> findf db c r p >>= k) >>= f
+runMongodbF db (Find c r p f) = ContT (\k -> findf db c (jsobjectf r) (jsobjectf p) >>= k) >>= f
 runMongodbF _ (Collect c f) = ContT (\k -> collectf c k) >>= f
 
 runMongodb :: forall e r a. Db -> Mongodb a -> ContT r (Eff (mdb :: MDB | e)) a
@@ -16,6 +17,14 @@ runMongodb db = iterM $ runMongodbF db
 foreign import data MDB :: !
 
 foreign import data Db :: *
+
+foreign import jsobjectf
+  "function jsobjectf(doc){ \
+  \  return doc.reduce(function(b, a){\
+  \    b[a.values[0]] = a.values[1].values[0];\
+  \    return b;\
+  \  }, {});\
+  \};" :: Document -> Foreign
 
 foreign import findf
   "function findf(db){ \
