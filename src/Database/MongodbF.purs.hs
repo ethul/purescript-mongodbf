@@ -2,10 +2,9 @@ module Database.MongodbF
   ( MongodbF(..)
   , Mongodb(..)
   , Cursor(..)
-  , Collection(..)
-  , Document(..)
-  , FMDocument(..)
+  , FindAndModifyOptions(..)
   , UpdateOptions(..)
+  , aggregate
   , collect
   , count
   , find
@@ -21,47 +20,36 @@ import Prelude
 import Control.Monad.Free
 import Data.Maybe
 import Data.Foreign
+import Database.MongodbF.Types
 
 foreign import data Cursor :: *
 
-type Collection = String
-
-type Document a = { | a }
-
 type UpdateOptions = { upsert :: Boolean, multi :: Boolean }
 
-type FMForeign
-  = { query :: Foreign
-    , sort :: Foreign
-    , remove :: Foreign
-    , update :: Foreign
+type FindAndModifyOptions
+  = { query :: Document
+    , sort :: Document
+    , remove :: Document
+    , update :: Document
     , new :: Boolean
-    , fields :: Foreign
-    , upsert :: Boolean
-    }
-
-type FMDocument a b c d e
-  = { query :: Document a
-    , sort :: Document b
-    , remove :: Document c
-    , update :: Document d
-    , new :: Boolean
-    , fields :: Document e
+    , fields :: Document
     , upsert :: Boolean
     }
 
 data MongodbF a
-  = Collect Cursor ([Foreign] -> a)
-  | Count Collection Foreign (Number -> a)
-  | Find Collection Foreign Foreign (Cursor -> a)
-  | FindAndModify Collection FMForeign (Maybe Foreign -> a)
-  | FindOne Collection Foreign Foreign (Maybe Foreign -> a)
-  | Insert Collection [Foreign] a
-  | Remove Collection Foreign Boolean a
-  | Save Collection Foreign a
-  | Update Collection Foreign Foreign UpdateOptions a
+  = Aggregate Collection [Document] (Foreign -> a)
+  | Collect Cursor ([Foreign] -> a)
+  | Count Collection Document (Number -> a)
+  | Find Collection Document Document (Cursor -> a)
+  | FindAndModify Collection FindAndModifyOptions (Maybe Foreign -> a)
+  | FindOne Collection Document Document (Maybe Foreign -> a)
+  | Insert Collection [Document] a
+  | Remove Collection Document Boolean a
+  | Save Collection Document a
+  | Update Collection Document Document UpdateOptions a
 
 instance mongodbFFunctor :: Functor MongodbF where
+  (<$>) f (Aggregate c p k) = Aggregate c p (\x -> f $ k x)
   (<$>) f (Collect c k) = Collect c (\x -> f $ k x)
   (<$>) f (Count c q k) = Count c q (\x -> f $ k x)
   (<$>) f (Find c r p k) = Find c r p (\x -> f $ k x)
@@ -74,42 +62,32 @@ instance mongodbFFunctor :: Functor MongodbF where
 
 type Mongodb = Free MongodbF
 
-foreign import toForeign "function toForeign(o){return o;}" :: forall a. Document a -> Foreign
+aggregate :: Collection -> [Document] -> Mongodb Foreign
+aggregate c p = liftF $ Aggregate c p id
 
 collect :: Cursor -> Mongodb [Foreign]
 collect c = liftF $ Collect c id
 
-count :: forall a. Collection -> Document a -> Mongodb Number
-count c q = liftF $ Count c (toForeign q) id
+count :: Collection -> Document -> Mongodb Number
+count c q = liftF $ Count c q id
 
-find :: forall a b. Collection -> Document a -> Document b -> Mongodb Cursor
-find c r p = liftF $ Find c (toForeign r) (toForeign p) id
+find :: Collection -> Document -> Document -> Mongodb Cursor
+find c r p = liftF $ Find c r p id
 
-findAndModify :: forall a b c d e. Collection -> FMDocument a b c d e -> Mongodb (Maybe Foreign)
-findAndModify c d =
-  let
-    doc =
-      { query: toForeign d.query
-      , sort: toForeign d.sort
-      , remove: toForeign d.remove
-      , update: toForeign d.update
-      , new: d.new
-      , fields: toForeign d.fields
-      , upsert: d.upsert
-      }
-  in liftF $ FindAndModify c doc id
+findAndModify :: Collection -> FindAndModifyOptions -> Mongodb (Maybe Foreign)
+findAndModify c o = liftF $ FindAndModify c o id
 
-findOne :: forall a b. Collection -> Document a -> Document b -> Mongodb (Maybe Foreign)
-findOne c r p = liftF $ FindOne c (toForeign r) (toForeign p) id
+findOne :: Collection -> Document -> Document -> Mongodb (Maybe Foreign)
+findOne c r p = liftF $ FindOne c r p id
 
-insert :: forall a. Collection -> [Document a] -> Mongodb {}
-insert c ds = liftF $ Insert c (toForeign <$> ds) {}
+insert :: Collection -> [Document] -> Mongodb {}
+insert c ds = liftF $ Insert c ds {}
 
-remove :: forall a. Collection -> Document a -> Boolean -> Mongodb {}
-remove c r o = liftF $ Remove c (toForeign r) o {}
+remove :: Collection -> Document -> Boolean -> Mongodb {}
+remove c r o = liftF $ Remove c r o {}
 
-save :: forall a. Collection -> Document a -> Mongodb {}
-save c d = liftF $ Save c (toForeign d) {}
+save :: Collection -> Document -> Mongodb {}
+save c d = liftF $ Save c d {}
 
-update :: forall a b. Collection -> Document a -> Document b -> UpdateOptions -> Mongodb {}
-update c q u o = liftF $ Update c (toForeign q) (toForeign u) o {}
+update :: Collection -> Document -> Document -> UpdateOptions -> Mongodb {}
+update c q u o = liftF $ Update c q u o {}
