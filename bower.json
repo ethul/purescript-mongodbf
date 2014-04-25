@@ -1,7 +1,7 @@
 {
   "name": "purescript-mongodbf",
   "version": "0.0.3",
-  "homepage": "https://github.com/purescript/purescript-mongodbf",
+  "homepage": "https://github.com/purescript-contrib/purescript-mongodbf",
   "description": "Mongodb free monad",
   "keywords": [
     "purescript"
