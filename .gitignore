@@ -5,4 +5,5 @@ bower_components
 js
 externs
 dist
+output
 tmp

@@ -1,6 +1,6 @@
 {
   "name": "purescript-mongodbf",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "homepage": "https://github.com/purescript-contrib/purescript-mongodbf",
   "description": "Mongodb free monad",
   "keywords": [
@@ -17,8 +17,7 @@
     "dist"
   ],
   "dependencies": {
-    "purescript-free": "*",
-    "purescript-foreign": "*",
-    "purescript-transformers": "*"
+    "purescript-free": "0.0.6",
+    "purescript-foreign": "0.1.1"
   }
 }
