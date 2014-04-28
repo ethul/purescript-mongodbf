@@ -17,8 +17,7 @@
     "dist"
   ],
   "dependencies": {
-    "purescript-free": "*",
-    "purescript-foreign": "*",
-    "purescript-transformers": "*"
+    "purescript-free": "0.0.6",
+    "purescript-foreign": "0.1.1"
   }
 }
