@@ -4,7 +4,7 @@ module Database.MongodbF.Types
   , Document(..)
   , ObjectId(..)
   , Value(..)
-  , Val
+  , Val, val
   , (->>)
   ) where
 
